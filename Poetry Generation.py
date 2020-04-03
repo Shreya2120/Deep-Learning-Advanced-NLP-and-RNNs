@@ -38,14 +38,14 @@ for line in open('/Users/admin/Desktop/Udemy/Advanced deep learning/machine_lear
     input_texts.append(input_line)
     target_texts.append(target_line)
     
-all_lines = input_line + target_line
+all_lines = input_texts + target_texts
 
 
 # Convert the sentences into integer
-tokenizers = Tokenizer(num_words = MAX_VOCAB_SIZE, filters = '')
-tokenizers.fit_on_texts(all_lines)
-input_sequences = tokenizers.texts_to_sequences(input_texts)
-target_sequences = tokenizers.texts_to_sequences(target_texts)
+tokenizer = Tokenizer(num_words = MAX_VOCAB_SIZE, filters = '')
+tokenizer.fit_on_texts(all_lines)
+input_sequences = tokenizer.texts_to_sequences(input_texts)
+target_sequences = tokenizer.texts_to_sequences(target_texts)
 
 
 # Find max sequence length
@@ -54,7 +54,7 @@ print('Max sequence length:', max_sequence_length_from_data)
 
 
 # Get word -> integer mapping
-word2idx = tokenizers.word_index
+word2idx = tokenizer.word_index
 print('Found %s unique tokens' %len(word2idx))
 assert('<sos>' in word2idx)
 assert('<eos>' in word2idx)
@@ -153,6 +153,53 @@ plt.plot(r.history['acc'], label = 'acc')
 plt.plot(r.history['val_acc'], label = 'val_acc')
 plt.legend()
 plt.show
+
+
+# Make a sampling model
+input2 = Input(shape = (1,1))
+x = embedding_layer(input2)
+x, h, c = lstm(x, initial_state = [input_h, input_c])
+output2 = dense(x)
+sampling_model = Model([input2, input_h, input_c], [output2,h,c])
+
+
+# Reverse word2idx dictionary to get back words
+# During prediction
+idx2word = {v:k for k,v in word2idx.items()}
+def sample_line():
+    # Initial inputs
+    np_input = np.array([[word2idx['<sos>']]])
+    h = np.zeros((1,LATENT_DIM))
+    c = np.zeros((1,LATENT_DIM))
+    # So we know when to quit
+    eos = word2idx['<eos>']
+    # Store the output here
+    output_sentence = []
+    for _ in range(max_sequence_length):
+        o, h, c = sampling_model.predict([np_input, h, c])
+        probs = o[0,0]
+        if np.argmax(probs) == 0:
+            print('wtf')
+        probs[0] = 0
+        probs /= probs.sum()
+        idx = np.random.choice(len(probs), p = probs)
+        if idx == eos:
+            break
+        # Accumulate output
+        output_sentence.append(idx2word.get(idx,'<WTF>'%idx))
+        # Make the next input into model
+        np_input[0,0] = idx
+    return ''.join(output_sentence)
+# Generate a 4 line poem
+while True:
+    for _ in range(4):
+        print(sample_line())
+        ans = input('---generate another?[Y/n]---')
+        if ans and ans[0].lower().startswith('n'):
+            break
+    
+
+
 
 
 
