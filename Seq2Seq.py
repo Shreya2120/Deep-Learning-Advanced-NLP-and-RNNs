@@ -179,6 +179,7 @@ encoder = LSTM(
   LATENT_DIM,
   return_state=True,
   # dropout=0.5 # dropout not available on gpu
+  # dropout is used to avoid overfitting
 )
 encoder_outputs, h, c = encoder(x)
 # encoder_outputs, h = encoder(x) #gru
