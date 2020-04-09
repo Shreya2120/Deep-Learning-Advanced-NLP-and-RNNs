@@ -277,6 +277,10 @@ model.save('s2s.h5')
 
 
 ##### Make predictions #####
+# As with the poetry example, we need to create another model
+# that can take in the RNN state and previous word as input
+# and accept a T=1 sequence.
+
 # The encoder will be stand-alone
 # From this we will get our initial decoder hidden state
 encoder_model = Model(encoder_inputs_placeholder, encoder_states)
